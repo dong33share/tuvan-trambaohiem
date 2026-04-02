@@ -1,0 +1,1383 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Khám Sức Khoẻ Tài Chính – Trạm Bảo Hiểm</title>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: '#2D7A4F', branddark: '#1F5937', brandlight: '#E8F5EE',
+            cta: '#F97316', ctadark: '#EA6C0A'
+          },
+          fontFamily: { sans: ['"Be Vietnam Pro"', 'sans-serif'] }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+
+    /* Score gauge */
+    .gauge-wrap { position: relative; width: 140px; height: 80px; overflow: hidden; }
+    .gauge-bg { stroke: #e2e8f0; stroke-width: 18; fill: none; }
+    .gauge-fill { stroke-width: 18; fill: none; stroke-linecap: round;
+      transition: stroke-dashoffset 0.6s cubic-bezier(.4,0,.2,1), stroke 0.4s ease;
+      transform-origin: center; transform: rotate(-90deg) scaleX(-1); }
+
+    /* Section nav dot */
+    .nav-dot { width: 10px; height: 10px; border-radius: 50%; transition: all 0.2s; }
+    .nav-dot.done { background: #2D7A4F; }
+    .nav-dot.active { background: #F97316; transform: scale(1.3); }
+    .nav-dot.pending { background: #e2e8f0; }
+
+    /* Input style */
+    .inp {
+      width: 100%; border: 1.5px solid #e2e8f0; border-radius: 8px;
+      padding: 10px 14px; font-family: 'Be Vietnam Pro', sans-serif;
+      font-size: 14px; color: #1e293b; background: #f8fafc;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+    .inp:focus { border-color: #2D7A4F; box-shadow: 0 0 0 3px rgba(45,122,79,0.12); background: #fff; }
+    .inp::placeholder { color: #94a3b8; }
+
+    /* Radio / Checkbox card */
+    .opt-card { cursor: pointer; }
+    .opt-card input[type=radio], .opt-card input[type=checkbox] { display: none; }
+    .opt-card .opt-inner {
+      border: 1.5px solid #e2e8f0; border-radius: 8px;
+      padding: 10px 14px; font-size: 13.5px; color: #475569;
+      transition: all 0.18s; display: flex; align-items: center; gap: 8px;
+      background: #f8fafc;
+    }
+    .opt-card .opt-inner:hover { border-color: #86efac; background: #f0fdf4; }
+    .opt-card input:checked + .opt-inner {
+      border-color: #2D7A4F; background: #E8F5EE; color: #1F5937; font-weight: 600;
+    }
+    .opt-card .opt-dot {
+      width: 16px; height: 16px; border: 2px solid #cbd5e1; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; transition: all 0.18s;
+    }
+    .opt-card input:checked + .opt-inner .opt-dot {
+      border-color: #2D7A4F; background: #2D7A4F;
+    }
+    .opt-card .opt-dot::after {
+      content: ''; width: 6px; height: 6px; border-radius: 50%;
+      background: white; display: none;
+    }
+    .opt-card input:checked + .opt-inner .opt-dot::after { display: block; }
+
+    /* Checkbox variant */
+    .opt-card .opt-sq {
+      width: 16px; height: 16px; border: 2px solid #cbd5e1; border-radius: 3px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; transition: all 0.18s;
+    }
+    .opt-card input:checked + .opt-inner .opt-sq {
+      border-color: #2D7A4F; background: #2D7A4F;
+    }
+    .opt-card .opt-sq::after {
+      content: '✓'; font-size: 10px; color: white; font-weight: 700; display: none;
+    }
+    .opt-card input:checked + .opt-inner .opt-sq::after { display: block; }
+
+    /* Score band */
+    .score-band { height: 6px; border-radius: 3px; transition: width 0.5s ease; }
+
+    /* Section card */
+    .section-card {
+      background: white; border-radius: 16px; border: 1.5px solid #f1f5f9;
+      box-shadow: 0 1px 8px rgba(0,0,0,0.05);
+      transition: box-shadow 0.2s;
+    }
+    .section-card:focus-within { box-shadow: 0 4px 20px rgba(45,122,79,0.1); border-color: #86efac; }
+
+    /* Result badge */
+    .result-badge {
+      padding: 6px 16px; border-radius: 100px; font-weight: 700; font-size: 13px;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+
+    /* Tooltip number fields */
+    .money-wrap { position: relative; }
+    .money-wrap .currency-hint {
+      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      font-size: 12px; color: #94a3b8; pointer-events: none;
+    }
+    .money-wrap .inp { padding-right: 60px; }
+
+    /* Sticky sidebar on desktop */
+    @media (min-width: 1024px) {
+      .sidebar-sticky { position: sticky; top: 24px; }
+    }
+
+    /* Print */
+    @media print {
+      .no-print { display: none !important; }
+      body { background: white !important; }
+    }
+  </style>
+</head>
+<body class="font-sans bg-slate-50 min-h-screen">
+
+<!-- ─────────────────── TOP NAV ─────────────────── -->
+<nav class="bg-branddark text-white px-6 py-3 flex items-center justify-between sticky top-0 z-50 shadow-lg no-print">
+  <div class="flex items-center gap-3">
+    <svg width="28" height="28" viewBox="0 0 100 100" fill="none">
+      <path d="M18 52a5 5 0 015-5h6v22h-6a5 5 0 01-5-5V52zm59 0v12a5 5 0 01-5 5h-6V47h6a5 5 0 015 5z" fill="white"/>
+      <path d="M24 48C24 33.1 35.6 21 50 21s26 12.1 26 27" stroke="white" stroke-width="6" stroke-linecap="round" fill="none"/>
+      <rect x="43" y="50" width="4" height="22" rx="2" fill="white"/>
+      <rect x="50" y="46" width="4" height="30" rx="2" fill="white"/>
+      <rect x="57" y="50" width="4" height="22" rx="2" fill="white"/>
+    </svg>
+    <div>
+      <div class="font-extrabold text-sm tracking-wide leading-tight">TRẠM BẢO HIỂM</div>
+      <div class="text-white/60 text-xs leading-none">Khám Sức Khoẻ Tài Chính</div>
+    </div>
+  </div>
+  <div class="flex items-center gap-3">
+    <button onclick="resetForm()" class="text-white/70 hover:text-white text-xs border border-white/30 rounded-lg px-3 py-1.5 transition-colors">
+      ↺ Làm lại
+    </button>
+    <button onclick="window.print()" class="bg-white/15 hover:bg-white/25 text-white text-xs rounded-lg px-3 py-1.5 transition-colors">
+      🖨 In hồ sơ
+    </button>
+  </div>
+</nav>
+
+<!-- ─────────────────── MAIN LAYOUT ─────────────────── -->
+<div class="max-w-6xl mx-auto px-4 py-8 lg:flex lg:gap-8 lg:items-start">
+
+  <!-- ══ SIDEBAR ══ -->
+  <aside class="lg:w-72 shrink-0 sidebar-sticky mb-6 lg:mb-0 no-print">
+
+    <!-- Score Card -->
+    <div class="bg-branddark rounded-2xl p-5 text-white mb-4 shadow-xl">
+      <div class="text-xs font-semibold text-white/70 uppercase tracking-widest mb-3">Điểm rủi ro</div>
+
+      <!-- Gauge SVG -->
+      <div class="flex flex-col items-center mb-3">
+        <div class="relative" style="width:140px;height:80px;overflow:hidden">
+          <svg width="140" height="140" viewBox="0 0 140 140" style="margin-top:0">
+            <!-- bg arc -->
+            <circle cx="70" cy="70" r="52" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="16"
+              stroke-dasharray="163 1000" stroke-dashoffset="-81.5" stroke-linecap="round"/>
+            <!-- fill arc -->
+            <circle id="gauge-arc" cx="70" cy="70" r="52" fill="none" stroke="#4ade80" stroke-width="16"
+              stroke-dasharray="0 163" stroke-dashoffset="-81.5" stroke-linecap="round"
+              style="transition: stroke-dasharray 0.6s ease, stroke 0.4s ease"/>
+          </svg>
+          <div class="absolute inset-0 flex flex-col items-center justify-end pb-3">
+            <div id="score-number" class="text-3xl font-extrabold text-white leading-none">0</div>
+            <div class="text-xs text-white/60">/ 100</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Result label -->
+      <div id="score-label" class="text-center text-sm font-semibold text-white/80 mb-3">Chưa có dữ liệu</div>
+
+      <!-- Score breakdown bars -->
+      <div class="space-y-2">
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-white/70">A. Thu nhập</span>
+          <div class="flex items-center gap-1.5">
+            <div class="w-20 h-1.5 bg-white/10 rounded-full overflow-hidden">
+              <div id="bar-a" class="h-full bg-green-400 rounded-full transition-all duration-500" style="width:0%"></div>
+            </div>
+            <span id="pts-a" class="text-white/80 w-5 text-right font-mono">0</span>
+          </div>
+        </div>
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-white/70">B. Tiết kiệm</span>
+          <div class="flex items-center gap-1.5">
+            <div class="w-20 h-1.5 bg-white/10 rounded-full overflow-hidden">
+              <div id="bar-b" class="h-full bg-green-400 rounded-full transition-all duration-500" style="width:0%"></div>
+            </div>
+            <span id="pts-b" class="text-white/80 w-5 text-right font-mono">0</span>
+          </div>
+        </div>
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-white/70">C. Sức khoẻ</span>
+          <div class="flex items-center gap-1.5">
+            <div class="w-20 h-1.5 bg-white/10 rounded-full overflow-hidden">
+              <div id="bar-c" class="h-full bg-green-400 rounded-full transition-all duration-500" style="width:0%"></div>
+            </div>
+            <span id="pts-c" class="text-white/80 w-5 text-right font-mono">0</span>
+          </div>
+        </div>
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-white/70">D. Bảo hiểm</span>
+          <div class="flex items-center gap-1.5">
+            <div class="w-20 h-1.5 bg-white/10 rounded-full overflow-hidden">
+              <div id="bar-d" class="h-full bg-green-400 rounded-full transition-all duration-500" style="width:0%"></div>
+            </div>
+            <span id="pts-d" class="text-white/80 w-5 text-right font-mono">0</span>
+          </div>
+        </div>
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-white/70">E. Người phụ thuộc</span>
+          <div class="flex items-center gap-1.5">
+            <div class="w-20 h-1.5 bg-white/10 rounded-full overflow-hidden">
+              <div id="bar-e" class="h-full bg-green-400 rounded-full transition-all duration-500" style="width:0%"></div>
+            </div>
+            <span id="pts-e" class="text-white/80 w-5 text-right font-mono">0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section nav -->
+    <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
+      <div class="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Tiến độ điền</div>
+      <div class="space-y-2" id="section-nav">
+        <!-- Injected by JS -->
+      </div>
+    </div>
+
+    <!-- Advisor badge -->
+    <div class="mt-4 bg-brandlight border border-green-200 rounded-xl p-4">
+      <div class="text-xs text-brand font-semibold mb-1.5">Tư vấn viên</div>
+      <div id="sidebar-adv-name" class="text-sm font-bold text-slate-700">—</div>
+      <div id="sidebar-adv-code" class="text-xs text-slate-400 mt-0.5">Mã: —</div>
+    </div>
+
+  </aside>
+
+  <!-- ══ MAIN FORM ══ -->
+  <main class="flex-1 space-y-5">
+
+    <!-- Header -->
+    <div class="bg-brand rounded-2xl p-6 text-white">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <h1 class="text-xl font-extrabold leading-tight mb-1">Khám Sức Khoẻ Tài Chính Gia Đình</h1>
+          <p class="text-white/75 text-sm">Công cụ nội bộ dành cho tư vấn viên · Điền cùng khách hàng · Gửi hồ sơ qua email sau khi hoàn thành</p>
+        </div>
+        <div class="shrink-0 bg-white/10 rounded-xl px-3 py-2 text-center">
+          <div id="progress-pct" class="text-2xl font-extrabold">0%</div>
+          <div class="text-white/60 text-xs">hoàn thành</div>
+        </div>
+      </div>
+      <!-- Progress bar -->
+      <div class="mt-4 h-2 bg-white/20 rounded-full overflow-hidden">
+        <div id="progress-bar" class="h-full bg-white rounded-full transition-all duration-500" style="width:0%"></div>
+      </div>
+    </div>
+
+    <!-- ── S0: Thông tin tư vấn viên ── -->
+    <div class="section-card" id="sec-0">
+      <div class="bg-branddark rounded-t-2xl px-6 py-4 flex items-center gap-3">
+        <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0">📋</div>
+        <div>
+          <div class="text-white font-bold">Thông Tin Tư Vấn Viên</div>
+          <div class="text-white/70 text-xs">Điền thông tin của bạn trước khi bắt đầu buổi tư vấn</div>
+        </div>
+      </div>
+      <div class="p-6 space-y-4">
+        <div class="grid md:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Tên tư vấn viên</label>
+            <input class="inp" type="text" id="adv-name" placeholder="Nguyễn Thị B" oninput="recalc()">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Email tư vấn viên</label>
+            <input class="inp" type="email" id="adv-email" placeholder="tenvantv@gmail.com" oninput="recalc()">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Mã đại lý</label>
+            <input class="inp" type="text" id="adv-code" placeholder="MLA-12345" oninput="recalc()" style="text-transform:uppercase">
+          </div>
+        </div>
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-700 flex gap-2 items-start">
+          <span class="shrink-0">⚠️</span>
+          <span>Mã đại lý phải khớp với email đã đăng ký trong hệ thống. Liên hệ quản lý nếu chưa có mã.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── S1: Thông tin cơ bản ── -->
+    <div class="section-card" id="sec-1">
+      <div class="bg-brand rounded-t-2xl px-6 py-4 flex items-center gap-3">
+        <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0">1</div>
+        <div>
+          <div class="text-white font-bold">Thông Tin Cơ Bản</div>
+          <div class="text-white/70 text-xs">Giúp tư vấn viên hiểu hoàn cảnh của anh/chị</div>
+        </div>
+      </div>
+      <div class="p-6 space-y-5">
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Họ và tên</label>
+            <input class="inp" type="text" id="f-name" placeholder="Nguyễn Văn A" oninput="recalc()">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Năm sinh</label>
+            <input class="inp" type="number" id="f-birth" placeholder="1990" min="1950" max="2005" oninput="recalc()">
+          </div>
+        </div>
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Nghề nghiệp / Công việc</label>
+            <input class="inp" type="text" id="f-job" placeholder="Chủ cửa hàng / Freelancer..." oninput="recalc()">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Thành phố</label>
+            <input class="inp" type="text" id="f-city" placeholder="Quy Nhơn, Bình Định..." oninput="recalc()">
+          </div>
+        </div>
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Email khách hàng <span class="text-brand font-normal text-xs">(để gửi hồ sơ)</span></label>
+            <input class="inp" type="email" id="f-email" placeholder="khachhang@gmail.com" oninput="recalc()">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Số điện thoại</label>
+            <input class="inp" type="tel" id="f-phone" placeholder="0912 345 678" oninput="recalc()">
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-2">Tình trạng gia đình</label>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+            <label class="opt-card"><input type="radio" name="family" value="single" onchange="recalc()"><div class="opt-inner"><div class="opt-dot"></div> Độc thân</div></label>
+            <label class="opt-card"><input type="radio" name="family" value="couple" onchange="recalc()"><div class="opt-inner"><div class="opt-dot"></div> Sắp kết hôn</div></label>
+            <label class="opt-card"><input type="radio" name="family" value="married" onchange="recalc()"><div class="opt-inner"><div class="opt-dot"></div> Đã kết hôn</div></label>
+            <label class="opt-card"><input type="radio" name="family" value="kids" onchange="recalc()"><div class="opt-inner"><div class="opt-dot"></div> Có con</div></label>
+            <label class="opt-card"><input type="radio" name="family" value="parents" onchange="recalc()"><div class="opt-inner"><div class="opt-dot"></div> Nuôi cha mẹ</div></label>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-2">Số người phụ thuộc hoàn toàn vào thu nhập của anh/chị</label>
+          <div class="flex flex-wrap gap-2" id="dependents-group">
+            <label class="opt-card"><input type="radio" name="dependents" value="0" onchange="recalc()"><div class="opt-inner"><div class="opt-dot"></div> Không có</div></label>
+            <label class="opt-card"><input type="radio" name="dependents" value="1" onchange="recalc()"><div class="opt-inner"><div class="opt-dot"></div> 1 người</div></label>
+            <label class="opt-card"><input type="radio" name="dependents" value="2" onchange="recalc()"><div class="opt-inner"><div class="opt-dot"></div> 2 người</div></label>
+            <label class="opt-card"><input type="radio" name="dependents" value="3" onchange="recalc()"><div class="opt-inner"><div class="opt-dot"></div> 3 người trở lên</div></label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── S2: Thu nhập ── -->
+    <div class="section-card" id="sec-2">
+      <div class="bg-brand rounded-t-2xl px-6 py-4 flex items-center gap-3">
+        <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0">2</div>
+        <div>
+          <div class="text-white font-bold">Bức Tranh Thu Nhập</div>
+          <div class="text-white/70 text-xs">Điền ước tính — không cần chính xác tuyệt đối</div>
+        </div>
+      </div>
+      <div class="p-6 space-y-5">
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Thu nhập chính / tháng <span class="text-slate-400 font-normal">(triệu VNĐ)</span></label>
+            <div class="money-wrap">
+              <input class="inp" type="number" id="income-main" placeholder="100" min="0" oninput="recalc()">
+              <span class="currency-hint">triệu</span>
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Thu nhập phụ / tháng <span class="text-slate-400 font-normal">(nếu có)</span></label>
+            <div class="money-wrap">
+              <input class="inp" type="number" id="income-side" placeholder="0" min="0" oninput="recalc()">
+              <span class="currency-hint">triệu</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Computed total -->
+        <div class="bg-brandlight border border-green-200 rounded-xl p-4 flex items-center justify-between">
+          <span class="text-sm font-semibold text-brand">Tổng thu nhập hàng tháng</span>
+          <span id="income-total" class="text-xl font-extrabold text-branddark">—</span>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-2">Nếu anh/chị không làm được 3 tháng — thu nhập vẫn còn không?</label>
+          <div class="grid md:grid-cols-3 gap-2">
+            <label class="opt-card"><input type="radio" name="income-stop" value="full" onchange="recalc()"><div class="opt-inner"><div class="opt-dot"></div> Vẫn còn đầy đủ</div></label>
+            <label class="opt-card"><input type="radio" name="income-stop" value="partial" onchange="recalc()"><div class="opt-inner"><div class="opt-dot"></div> Còn một phần</div></label>
+            <label class="opt-card"><input type="radio" name="income-stop" value="zero" onchange="recalc()"><div class="opt-inner"><div class="opt-dot"></div> Dừng hết</div></label>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-2">Thu nhập phụ thuộc vào sức khoẻ / sự có mặt của anh/chị ở mức nào?</label>
+          <div class="space-y-2">
+            <label class="opt-card block"><input type="radio" name="income-dep" value="full" onchange="recalc()"><div class="opt-inner"><div class="opt-dot"></div> Hoàn toàn — tôi ngừng = thu nhập ngừng</div></label>
+            <label class="opt-card block"><input type="radio" name="income-dep" value="partial" onchange="recalc()"><div class="opt-inner"><div class="opt-dot"></div> Một phần — có hệ thống nhưng cần tôi giám sát</div></label>
+            <label class="opt-card block"><input type="radio" name="income-dep" value="low" onchange="recalc()"><div class="opt-inner"><div class="opt-dot"></div> Ít phụ thuộc — có đội nhóm / thu nhập thụ động</div></label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── S3: Chi tiêu & Tiết kiệm ── -->
+    <div class="section-card" id="sec-3">
+      <div class="bg-brand rounded-t-2xl px-6 py-4 flex items-center gap-3">
+        <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0">3</div>
+        <div>
+          <div class="text-white font-bold">Chi Tiêu & Tiết Kiệm</div>
+          <div class="text-white/70 text-xs">Tính được bao nhiêu tháng gia đình tự sống nếu thu nhập dừng</div>
+        </div>
+      </div>
+      <div class="p-6 space-y-4">
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Tiền thuê nhà / trả góp mua nhà</label>
+            <div class="money-wrap"><input class="inp" type="number" id="exp-housing" placeholder="0" min="0" oninput="recalc()"><span class="currency-hint">triệu</span></div>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Ăn uống, sinh hoạt hàng ngày</label>
+            <div class="money-wrap"><input class="inp" type="number" id="exp-living" placeholder="0" min="0" oninput="recalc()"><span class="currency-hint">triệu</span></div>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Học phí / chi phí con cái</label>
+            <div class="money-wrap"><input class="inp" type="number" id="exp-kids" placeholder="0" min="0" oninput="recalc()"><span class="currency-hint">triệu</span></div>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Phí bảo hiểm đang đóng</label>
+            <div class="money-wrap"><input class="inp" type="number" id="exp-insurance" placeholder="0" min="0" oninput="recalc()"><span class="currency-hint">triệu</span></div>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Trả nợ hàng tháng (ngân hàng, vay...)</label>
+            <div class="money-wrap"><input class="inp" type="number" id="exp-debt" placeholder="0" min="0" oninput="recalc()"><span class="currency-hint">triệu</span></div>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Chi phí cố định khác</label>
+            <div class="money-wrap"><input class="inp" type="number" id="exp-other" placeholder="0" min="0" oninput="recalc()"><span class="currency-hint">triệu</span></div>
+          </div>
+        </div>
+
+        <!-- Computed expense + buffer -->
+        <div class="grid md:grid-cols-3 gap-3">
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-center">
+            <div class="text-xs text-slate-500 mb-1">Chi phí cố định / tháng</div>
+            <div id="expense-total" class="text-xl font-extrabold text-slate-800">—</div>
+          </div>
+          <div class="bg-brandlight border border-green-200 rounded-xl p-4 text-center">
+            <div class="text-xs text-brand mb-1">Tiết kiệm hiện có</div>
+            <div class="money-wrap">
+              <input class="inp text-center font-bold text-brand" type="number" id="savings" placeholder="0" min="0" oninput="recalc()" style="padding-right:45px">
+              <span class="currency-hint">triệu</span>
+            </div>
+          </div>
+          <div id="runway-box" class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-center">
+            <div class="text-xs text-slate-500 mb-1">Tự sống được</div>
+            <div id="runway-val" class="text-xl font-extrabold text-slate-800">—</div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-2">Chi phí y tế lớn nhất anh/chị sẵn sàng chi từ tiết kiệm <span class="text-slate-400 font-normal">(không cần bán tài sản)</span></label>
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-2">
+            <label class="opt-card"><input type="radio" name="medical-cap" value="1" onchange="recalc()"><div class="opt-inner text-center flex-col gap-1"><div class="opt-dot"></div><span>Dưới 50 triệu</span></div></label>
+            <label class="opt-card"><input type="radio" name="medical-cap" value="2" onchange="recalc()"><div class="opt-inner text-center flex-col gap-1"><div class="opt-dot"></div><span>50–200 triệu</span></div></label>
+            <label class="opt-card"><input type="radio" name="medical-cap" value="3" onchange="recalc()"><div class="opt-inner text-center flex-col gap-1"><div class="opt-dot"></div><span>200–500 triệu</span></div></label>
+            <label class="opt-card"><input type="radio" name="medical-cap" value="4" onchange="recalc()"><div class="opt-inner text-center flex-col gap-1"><div class="opt-dot"></div><span>500tr–1 tỷ</span></div></label>
+            <label class="opt-card"><input type="radio" name="medical-cap" value="5" onchange="recalc()"><div class="opt-inner text-center flex-col gap-1"><div class="opt-dot"></div><span>Trên 1 tỷ</span></div></label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── S4: Sức khoẻ ── -->
+    <div class="section-card" id="sec-4">
+      <div class="bg-brand rounded-t-2xl px-6 py-4 flex items-center gap-3">
+        <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0">4</div>
+        <div>
+          <div class="text-white font-bold">Tình Trạng Sức Khoẻ</div>
+          <div class="text-white/70 text-xs">Ảnh hưởng đến điều kiện và phí bảo hiểm</div>
+        </div>
+      </div>
+      <div class="p-6 space-y-5">
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-2">Sức khoẻ tổng quát hiện tại</label>
+          <div class="grid md:grid-cols-3 gap-2">
+            <label class="opt-card"><input type="radio" name="health-general" value="great" onchange="recalc()"><div class="opt-inner"><div class="opt-dot"></div> Rất tốt</div></label>
+            <label class="opt-card"><input type="radio" name="health-general" value="normal" onchange="recalc()"><div class="opt-inner"><div class="opt-dot"></div> Tốt, bình thường</div></label>
+            <label class="opt-card"><input type="radio" name="health-general" value="sick" onchange="recalc()"><div class="opt-inner"><div class="opt-dot"></div> Đang có bệnh / điều trị</div></label>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-2">Có hút thuốc không?</label>
+          <div class="flex flex-wrap gap-2">
+            <label class="opt-card"><input type="radio" name="smoke" value="no" onchange="recalc()"><div class="opt-inner"><div class="opt-dot"></div> Không</div></label>
+            <label class="opt-card"><input type="radio" name="smoke" value="quit" onchange="recalc()"><div class="opt-inner"><div class="opt-dot"></div> Đã bỏ (hơn 1 năm)</div></label>
+            <label class="opt-card"><input type="radio" name="smoke" value="yes" onchange="recalc()"><div class="opt-inner"><div class="opt-dot"></div> Có</div></label>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-2">Đang có bệnh mãn tính không? <span class="text-slate-400 font-normal">(tiểu đường, huyết áp, tim mạch, viêm gan...)</span></label>
+          <div class="flex flex-wrap gap-2 mb-2">
+            <label class="opt-card"><input type="radio" name="chronic" value="no" onchange="toggleField('chronic-detail', false); recalc()"><div class="opt-inner"><div class="opt-dot"></div> Không</div></label>
+            <label class="opt-card"><input type="radio" name="chronic" value="yes" onchange="toggleField('chronic-detail', true); recalc()"><div class="opt-inner"><div class="opt-dot"></div> Có — ghi rõ bên dưới</div></label>
+          </div>
+          <input class="inp hidden" id="chronic-detail" type="text" placeholder="VD: Tiểu đường type 2 (đang kiểm soát tốt)..." oninput="recalc()">
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-2">Đã từng phẫu thuật lớn hoặc điều trị bệnh nặng?</label>
+          <div class="flex flex-wrap gap-2 mb-2">
+            <label class="opt-card"><input type="radio" name="surgery" value="no" onchange="toggleField('surgery-detail', false); recalc()"><div class="opt-inner"><div class="opt-dot"></div> Không</div></label>
+            <label class="opt-card"><input type="radio" name="surgery" value="yes" onchange="toggleField('surgery-detail', true); recalc()"><div class="opt-inner"><div class="opt-dot"></div> Có — ghi rõ</div></label>
+          </div>
+          <input class="inp hidden" id="surgery-detail" type="text" placeholder="VD: Mổ ruột thừa năm 2019..." oninput="recalc()">
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-2">Gia đình có tiền sử bệnh nặng không? <span class="text-slate-400 font-normal">(ung thư, nhồi máu cơ tim, đột quỵ...)</span></label>
+          <div class="flex flex-wrap gap-2 mb-2">
+            <label class="opt-card"><input type="radio" name="family-history" value="no" onchange="toggleField('family-history-detail', false); recalc()"><div class="opt-inner"><div class="opt-dot"></div> Không</div></label>
+            <label class="opt-card"><input type="radio" name="family-history" value="yes" onchange="toggleField('family-history-detail', true); recalc()"><div class="opt-inner"><div class="opt-dot"></div> Có — ghi rõ</div></label>
+          </div>
+          <input class="inp hidden" id="family-history-detail" type="text" placeholder="VD: Mẹ mắc ung thư vú năm 2015..." oninput="recalc()">
+        </div>
+      </div>
+    </div>
+
+    <!-- ── S5: Bảo hiểm hiện tại ── -->
+    <div class="section-card" id="sec-5">
+      <div class="bg-brand rounded-t-2xl px-6 py-4 flex items-center gap-3">
+        <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0">5</div>
+        <div>
+          <div class="text-white font-bold">Bảo Hiểm Đang Có</div>
+          <div class="text-white/70 text-xs">Điền theo từng người trong gia đình — để tìm đúng khoảng trống</div>
+        </div>
+      </div>
+      <div class="p-6 space-y-5">
+
+        <!-- ── NGƯỜI TRỤ CỘT ── -->
+        <div class="rounded-xl overflow-hidden border-2 border-brand/30">
+          <div class="bg-brandlight px-4 py-2.5 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="text-base">👤</span>
+              <span class="font-bold text-brand text-sm">Người trụ cột — Anh/Chị</span>
+            </div>
+            <span class="text-xs font-semibold text-brand bg-brand/10 px-2 py-0.5 rounded-full">Quan trọng nhất</span>
+          </div>
+          <div class="divide-y divide-slate-100">
+            <!-- Nhân thọ -->
+            <div class="px-4 py-3 flex flex-wrap items-start gap-3">
+              <span class="text-sm text-slate-700 w-44 pt-1 shrink-0">Bảo hiểm nhân thọ</span>
+              <div class="flex gap-2 shrink-0">
+                <label class="opt-card"><input type="radio" name="self-life" value="yes" onchange="toggleInsRow('self-life-detail',true);recalc()"><div class="opt-inner py-1 px-2.5 text-xs"><div class="opt-dot" style="width:12px;height:12px"></div> Có</div></label>
+                <label class="opt-card"><input type="radio" name="self-life" value="no" onchange="toggleInsRow('self-life-detail',false);recalc()"><div class="opt-inner py-1 px-2.5 text-xs"><div class="opt-dot" style="width:12px;height:12px"></div> Không</div></label>
+              </div>
+              <div class="hidden flex-1 flex gap-2 min-w-0" id="self-life-detail">
+                <div class="money-wrap flex-1 min-w-0"><input class="inp text-sm" type="number" id="self-life-amount" placeholder="Mức bảo vệ (triệu)" min="0" oninput="recalc()"><span class="currency-hint">triệu</span></div>
+                <input class="inp text-sm w-36 shrink-0" type="text" id="self-life-co" placeholder="Công ty BH" oninput="recalc()">
+              </div>
+            </div>
+            <!-- Hiểm nghèo -->
+            <div class="px-4 py-3 flex flex-wrap items-start gap-3">
+              <span class="text-sm text-slate-700 w-44 pt-1 shrink-0">Bệnh hiểm nghèo / ung thư</span>
+              <div class="flex gap-2 shrink-0">
+                <label class="opt-card"><input type="radio" name="self-critical" value="yes" onchange="toggleInsRow('self-critical-detail',true);recalc()"><div class="opt-inner py-1 px-2.5 text-xs"><div class="opt-dot" style="width:12px;height:12px"></div> Có</div></label>
+                <label class="opt-card"><input type="radio" name="self-critical" value="no" onchange="toggleInsRow('self-critical-detail',false);recalc()"><div class="opt-inner py-1 px-2.5 text-xs"><div class="opt-dot" style="width:12px;height:12px"></div> Không</div></label>
+              </div>
+              <div class="hidden flex-1" id="self-critical-detail">
+                <div class="money-wrap" style="max-width:200px"><input class="inp text-sm" type="number" id="self-critical-amount" placeholder="Mức bảo vệ (triệu)" min="0" oninput="recalc()"><span class="currency-hint">triệu</span></div>
+              </div>
+            </div>
+            <!-- Sức khoẻ -->
+            <div class="px-4 py-3 flex flex-wrap items-start gap-3">
+              <span class="text-sm text-slate-700 w-44 pt-1 shrink-0">BH sức khoẻ / nằm viện</span>
+              <div class="flex gap-2 shrink-0">
+                <label class="opt-card"><input type="radio" name="self-health" value="yes" onchange="toggleInsRow('self-health-detail',true);recalc()"><div class="opt-inner py-1 px-2.5 text-xs"><div class="opt-dot" style="width:12px;height:12px"></div> Có</div></label>
+                <label class="opt-card"><input type="radio" name="self-health" value="no" onchange="toggleInsRow('self-health-detail',false);recalc()"><div class="opt-inner py-1 px-2.5 text-xs"><div class="opt-dot" style="width:12px;height:12px"></div> Không</div></label>
+              </div>
+              <div class="hidden flex-1" id="self-health-detail">
+                <div class="money-wrap" style="max-width:220px"><input class="inp text-sm" type="number" id="self-health-amount" placeholder="Hạn mức viện phí/năm" min="0" oninput="recalc()"><span class="currency-hint">triệu</span></div>
+              </div>
+            </div>
+            <!-- BHXH -->
+            <div class="px-4 py-3 flex flex-wrap items-center gap-3">
+              <span class="text-sm text-slate-700 w-44 shrink-0">BHXH / BHYT nhà nước</span>
+              <div class="flex gap-2">
+                <label class="opt-card"><input type="radio" name="self-social" value="yes" onchange="recalc()"><div class="opt-inner py-1 px-2.5 text-xs"><div class="opt-dot" style="width:12px;height:12px"></div> Có</div></label>
+                <label class="opt-card"><input type="radio" name="self-social" value="no" onchange="recalc()"><div class="opt-inner py-1 px-2.5 text-xs"><div class="opt-dot" style="width:12px;height:12px"></div> Không</div></label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── VỢ / CHỒNG (hiện nếu đã kết hôn) ── -->
+        <div id="spouse-ins-section" class="hidden rounded-xl overflow-hidden border border-slate-200">
+          <div class="bg-slate-50 px-4 py-2.5 flex items-center gap-2">
+            <span class="text-base">👫</span>
+            <span class="font-semibold text-slate-600 text-sm">Vợ / Chồng</span>
+          </div>
+          <div class="divide-y divide-slate-100">
+            <div class="px-4 py-3 flex flex-wrap items-start gap-3">
+              <span class="text-sm text-slate-700 w-44 pt-1 shrink-0">Bảo hiểm nhân thọ</span>
+              <div class="flex gap-2 shrink-0">
+                <label class="opt-card"><input type="radio" name="spouse-life" value="yes" onchange="toggleInsRow('spouse-life-detail',true);recalc()"><div class="opt-inner py-1 px-2.5 text-xs"><div class="opt-dot" style="width:12px;height:12px"></div> Có</div></label>
+                <label class="opt-card"><input type="radio" name="spouse-life" value="no" onchange="toggleInsRow('spouse-life-detail',false);recalc()"><div class="opt-inner py-1 px-2.5 text-xs"><div class="opt-dot" style="width:12px;height:12px"></div> Không</div></label>
+              </div>
+              <div class="hidden flex-1 flex gap-2" id="spouse-life-detail">
+                <div class="money-wrap flex-1"><input class="inp text-sm" type="number" id="spouse-life-amount" placeholder="Mức bảo vệ (triệu)" min="0" oninput="recalc()"><span class="currency-hint">triệu</span></div>
+              </div>
+            </div>
+            <div class="px-4 py-3 flex flex-wrap items-start gap-3">
+              <span class="text-sm text-slate-700 w-44 pt-1 shrink-0">BH sức khoẻ / nằm viện</span>
+              <div class="flex gap-2">
+                <label class="opt-card"><input type="radio" name="spouse-health" value="yes" onchange="recalc()"><div class="opt-inner py-1 px-2.5 text-xs"><div class="opt-dot" style="width:12px;height:12px"></div> Có</div></label>
+                <label class="opt-card"><input type="radio" name="spouse-health" value="no" onchange="recalc()"><div class="opt-inner py-1 px-2.5 text-xs"><div class="opt-dot" style="width:12px;height:12px"></div> Không</div></label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── CON CÁI (hiện nếu có con) ── -->
+        <div id="child-ins-section" class="hidden rounded-xl overflow-hidden border border-slate-200">
+          <div class="bg-slate-50 px-4 py-2.5 flex items-center gap-2">
+            <span class="text-base">👶</span>
+            <span class="font-semibold text-slate-600 text-sm">Con cái</span>
+          </div>
+          <!-- Lưu ý quan trọng -->
+          <div class="mx-4 mt-3 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5 flex gap-2">
+            <span class="text-amber-500 shrink-0 mt-0.5">⚠️</span>
+            <p class="text-xs text-amber-700 leading-relaxed">
+              <strong>Lưu ý:</strong> Bảo hiểm cho con là tốt — nhưng <strong>không thay thế</strong> bảo vệ thu nhập của người trụ cột. Nếu người trụ cột chưa có bảo hiểm mà đã mua cho con, đây là thứ tự ưu tiên cần xem lại.
+            </p>
+          </div>
+          <div class="divide-y divide-slate-100 mt-3">
+            <div class="px-4 py-3 flex flex-wrap items-start gap-3">
+              <span class="text-sm text-slate-700 w-44 pt-1 shrink-0">BH nhân thọ / tiết kiệm cho con</span>
+              <div class="flex gap-2 shrink-0">
+                <label class="opt-card"><input type="radio" name="child-life" value="yes" onchange="toggleInsRow('child-life-detail',true);recalc()"><div class="opt-inner py-1 px-2.5 text-xs"><div class="opt-dot" style="width:12px;height:12px"></div> Có</div></label>
+                <label class="opt-card"><input type="radio" name="child-life" value="no" onchange="toggleInsRow('child-life-detail',false);recalc()"><div class="opt-inner py-1 px-2.5 text-xs"><div class="opt-dot" style="width:12px;height:12px"></div> Không</div></label>
+              </div>
+              <div class="hidden flex-1 flex gap-2" id="child-life-detail">
+                <div class="money-wrap flex-1"><input class="inp text-sm" type="number" id="child-life-amount" placeholder="Mức đóng phí/năm hoặc bảo vệ" min="0" oninput="recalc()"><span class="currency-hint">triệu</span></div>
+                <input class="inp text-sm w-36 shrink-0" type="text" id="child-life-co" placeholder="Công ty BH" oninput="recalc()">
+              </div>
+            </div>
+            <div class="px-4 py-3 flex flex-wrap items-center gap-3">
+              <span class="text-sm text-slate-700 w-44 shrink-0">BH sức khoẻ cho con</span>
+              <div class="flex gap-2">
+                <label class="opt-card"><input type="radio" name="child-health" value="yes" onchange="recalc()"><div class="opt-inner py-1 px-2.5 text-xs"><div class="opt-dot" style="width:12px;height:12px"></div> Có</div></label>
+                <label class="opt-card"><input type="radio" name="child-health" value="no" onchange="recalc()"><div class="opt-inner py-1 px-2.5 text-xs"><div class="opt-dot" style="width:12px;height:12px"></div> Không</div></label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gap analysis -->
+        <div id="gap-box" class="hidden bg-amber-50 border border-amber-200 rounded-xl p-4">
+          <div class="text-xs font-semibold text-amber-700 uppercase tracking-wider mb-3">Phân tích khoảng trống — Người trụ cột</div>
+          <div class="grid grid-cols-3 gap-3 text-center">
+            <div class="bg-white rounded-lg p-2.5">
+              <div class="text-xs text-slate-500 mb-1">Cần có <span class="block text-slate-400">(thu nhập × 60 tháng)</span></div>
+              <div id="gap-need" class="font-bold text-slate-800 text-sm">—</div>
+            </div>
+            <div class="bg-white rounded-lg p-2.5">
+              <div class="text-xs text-slate-500 mb-1">Đang có <span class="block text-slate-400">(trụ cột)</span></div>
+              <div id="gap-have" class="font-bold text-brand text-sm">—</div>
+            </div>
+            <div class="bg-white rounded-lg p-2.5">
+              <div class="text-xs text-slate-500 mb-1">Còn thiếu</div>
+              <div id="gap-diff" class="font-bold text-sm">—</div>
+            </div>
+          </div>
+          <div id="gap-child-warning" class="hidden mt-3 text-xs text-amber-700 flex gap-1.5">
+            <span>⚠️</span>
+            <span id="gap-child-warning-text"></span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── S6: Mục tiêu ── -->
+    <div class="section-card" id="sec-6">
+      <div class="bg-brand rounded-t-2xl px-6 py-4 flex items-center gap-3">
+        <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0">6</div>
+        <div>
+          <div class="text-white font-bold">Điều Anh/Chị Muốn Bảo Vệ</div>
+          <div class="text-white/70 text-xs">Không có đúng sai — quan điểm cá nhân của anh/chị</div>
+        </div>
+      </div>
+      <div class="p-6 space-y-5">
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1.5">Mục tiêu tài chính lớn nhất trong 5 năm tới</label>
+          <textarea class="inp" id="goal-5yr" rows="2" placeholder="VD: Mua nhà, mở thêm chi nhánh, cho con học trường tốt..." oninput="recalc()" style="resize:none"></textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1.5">Nếu có chuyện xảy ra với bản thân — anh/chị lo nhất điều gì?</label>
+          <textarea class="inp" id="goal-worry" rows="2" placeholder="VD: Vợ con không biết xoay xở, khoản vay ngân hàng..." oninput="recalc()" style="resize:none"></textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-2">Điều quan trọng nhất muốn bảo vệ <span class="text-slate-400 font-normal">(chọn tất cả phù hợp)</span></label>
+          <div class="grid md:grid-cols-2 gap-2">
+            <label class="opt-card"><input type="checkbox" name="priority" value="income" onchange="recalc()"><div class="opt-inner"><div class="opt-sq"></div> Thu nhập không bị gián đoạn</div></label>
+            <label class="opt-card"><input type="checkbox" name="priority" value="medical" onchange="recalc()"><div class="opt-inner"><div class="opt-sq"></div> Chi phí y tế không làm kiệt tiết kiệm</div></label>
+            <label class="opt-card"><input type="checkbox" name="priority" value="family" onchange="recalc()"><div class="opt-inner"><div class="opt-sq"></div> Gia đình vẫn ổn nếu tôi không còn</div></label>
+            <label class="opt-card"><input type="checkbox" name="priority" value="edu" onchange="recalc()"><div class="opt-inner"><div class="opt-sq"></div> Con cái vẫn có tiền học đến hết đại học</div></label>
+            <label class="opt-card"><input type="checkbox" name="priority" value="invest" onchange="recalc()"><div class="opt-inner"><div class="opt-sq"></div> Khoản tiết kiệm / đầu tư không bị đụng tới</div></label>
+            <label class="opt-card"><input type="checkbox" name="priority" value="retire" onchange="recalc()"><div class="opt-inner"><div class="opt-sq"></div> Nghỉ hưu đúng thời điểm mong muốn</div></label>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1.5">Ghi chú thêm cho tư vấn viên</label>
+          <textarea class="inp" id="notes" rows="3" placeholder="Bất kỳ thông tin nào anh/chị muốn tư vấn viên biết trước buổi tư vấn..." oninput="recalc()" style="resize:none"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── RESULTS ── -->
+    <div class="section-card" id="sec-result">
+      <div class="bg-branddark rounded-t-2xl px-6 py-4 flex items-center gap-3">
+        <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0">✓</div>
+        <div>
+          <div class="text-white font-bold">Kết Quả & Khuyến Nghị</div>
+          <div class="text-white/70 text-xs">Cập nhật tự động khi anh/chị điền thông tin</div>
+        </div>
+      </div>
+      <div class="p-6">
+
+        <!-- Big score -->
+        <div class="flex flex-col md:flex-row gap-6 items-center mb-6">
+          <div class="text-center">
+            <div class="text-7xl font-extrabold leading-none mb-1" id="result-score-big" style="color:#2D7A4F">0</div>
+            <div class="text-slate-400 text-sm">/ 100 điểm rủi ro</div>
+          </div>
+          <div class="flex-1">
+            <div id="result-badge-wrap" class="mb-3"></div>
+            <div id="result-description" class="text-slate-600 text-sm leading-relaxed">
+              Điền thông tin vào các phần trên để xem kết quả phân tích rủi ro của anh/chị.
+            </div>
+          </div>
+        </div>
+
+        <!-- Score scale -->
+        <div class="flex rounded-full overflow-hidden h-4 mb-2">
+          <div class="flex-1 bg-green-500 flex items-center justify-center text-white text-xs font-bold">0–19</div>
+          <div class="flex-1 bg-lime-500 flex items-center justify-center text-white text-xs font-bold">20–39</div>
+          <div class="flex-1 bg-yellow-500 flex items-center justify-center text-white text-xs font-bold">40–59</div>
+          <div class="flex-1 bg-orange-500 flex items-center justify-center text-white text-xs font-bold">60–79</div>
+          <div class="flex-1 bg-red-500 flex items-center justify-center text-white text-xs font-bold">80–100</div>
+        </div>
+        <div class="flex justify-between text-xs text-slate-400 mb-6">
+          <span>Được bảo vệ tốt</span><span>Rủi ro rất cao</span>
+        </div>
+
+        <!-- Breakdown table -->
+        <div class="rounded-xl overflow-hidden border border-slate-100 mb-5">
+          <table class="w-full text-sm">
+            <thead><tr class="bg-slate-50">
+              <th class="text-left py-2.5 px-4 font-semibold text-slate-500 text-xs">Tiêu chí</th>
+              <th class="text-center py-2.5 px-4 font-semibold text-slate-500 text-xs">Điểm</th>
+              <th class="text-left py-2.5 px-4 font-semibold text-slate-500 text-xs">Nhận xét</th>
+            </tr></thead>
+            <tbody id="result-table-body" class="divide-y divide-slate-50">
+              <tr><td class="py-3 px-4 text-slate-600">A. Rủi ro thu nhập</td><td class="py-3 px-4 text-center"><span id="rt-a" class="font-bold text-slate-300">—</span><span class="text-slate-300">/20</span></td><td class="py-3 px-4 text-xs text-slate-400" id="rc-a">Chưa có dữ liệu</td></tr>
+              <tr class="bg-slate-50/50"><td class="py-3 px-4 text-slate-600">B. Rủi ro tiết kiệm</td><td class="py-3 px-4 text-center"><span id="rt-b" class="font-bold text-slate-300">—</span><span class="text-slate-300">/20</span></td><td class="py-3 px-4 text-xs text-slate-400" id="rc-b">Chưa có dữ liệu</td></tr>
+              <tr><td class="py-3 px-4 text-slate-600">C. Rủi ro sức khoẻ</td><td class="py-3 px-4 text-center"><span id="rt-c" class="font-bold text-slate-300">—</span><span class="text-slate-300">/20</span></td><td class="py-3 px-4 text-xs text-slate-400" id="rc-c">Chưa có dữ liệu</td></tr>
+              <tr class="bg-slate-50/50"><td class="py-3 px-4 text-slate-600">D. Rủi ro bảo hiểm</td><td class="py-3 px-4 text-center"><span id="rt-d" class="font-bold text-slate-300">—</span><span class="text-slate-300">/20</span></td><td class="py-3 px-4 text-xs text-slate-400" id="rc-d">Chưa có dữ liệu</td></tr>
+              <tr><td class="py-3 px-4 text-slate-600">E. Người phụ thuộc</td><td class="py-3 px-4 text-center"><span id="rt-e" class="font-bold text-slate-300">—</span><span class="text-slate-300">/20</span></td><td class="py-3 px-4 text-xs text-slate-400" id="rc-e">Chưa có dữ liệu</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Priorities highlight -->
+        <div id="priority-box" class="hidden bg-brandlight border border-green-200 rounded-xl p-4 mb-5">
+          <div class="text-xs font-semibold text-brand uppercase tracking-wider mb-2">Điều anh/chị muốn bảo vệ nhất</div>
+          <div id="priority-list" class="flex flex-wrap gap-2"></div>
+        </div>
+
+        <!-- ── Completion Panel ── -->
+        <div class="bg-branddark rounded-2xl p-5">
+          <!-- Main CTA button -->
+          <button onclick="doComplete()" id="btn-complete"
+            class="w-full bg-cta hover:bg-ctadark text-white font-extrabold text-base py-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg">
+            <span id="btn-complete-icon">✅</span>
+            <span id="btn-complete-text">Hoàn thành & Gửi hồ sơ</span>
+          </button>
+
+          <!-- Step statuses -->
+          <div id="complete-steps" class="hidden mt-4 space-y-2">
+            <div class="flex items-center gap-2 text-sm" id="step-1">
+              <span id="step-1-icon" class="text-base w-5 text-center">⏳</span>
+              <span class="text-white/80">Gửi hồ sơ cho khách hàng</span>
+              <span id="step-1-status" class="ml-auto text-xs text-white/50"></span>
+            </div>
+            <div class="flex items-center gap-2 text-sm" id="step-2">
+              <span id="step-2-icon" class="text-base w-5 text-center">⏳</span>
+              <span class="text-white/80">Lưu CRM & gửi email tư vấn viên</span>
+              <span id="step-2-status" class="ml-auto text-xs text-white/50"></span>
+            </div>
+            <div class="flex items-center gap-2 text-sm" id="step-3">
+              <span id="step-3-icon" class="text-base w-5 text-center">⏳</span>
+              <span class="text-white/80">Phân tích AI & gửi gợi ý sản phẩm</span>
+              <span id="step-3-status" class="ml-auto text-xs text-white/50"></span>
+            </div>
+          </div>
+
+          <div class="text-center border-t border-white/10 pt-3 mt-4">
+            <button onclick="window.print()"
+              class="text-white/50 hover:text-white text-sm transition-colors">
+              🖨 In / Lưu PDF
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+</div><!-- end main layout -->
+
+<script>
+// ═══════════════════════════════════════════════════
+// DATA & HELPERS
+// ═══════════════════════════════════════════════════
+
+const SECTIONS = [
+  { id: 'sec-0', label: 'Tư vấn viên',       fields: ['adv-name','adv-email','adv-code'] },
+  { id: 'sec-1', label: 'Thông tin khách',    fields: ['f-name','f-birth','f-job'] },
+  { id: 'sec-2', label: 'Thu nhập',           fields: ['income-main'] },
+  { id: 'sec-3', label: 'Chi tiêu & tiết kiệm', fields: ['exp-living','savings'] },
+  { id: 'sec-4', label: 'Sức khoẻ',          fields: [] },
+  { id: 'sec-5', label: 'Bảo hiểm',          fields: [] },
+  { id: 'sec-6', label: 'Mục tiêu',          fields: ['goal-worry'] },
+];
+
+function getRadio(name) {
+  const el = document.querySelector(`input[name="${name}"]:checked`);
+  return el ? el.value : null;
+}
+function getNum(id) { return parseFloat(document.getElementById(id)?.value) || 0; }
+function fmt(n) { return n > 0 ? n.toLocaleString('vi-VN') + ' triệu' : '—'; }
+
+function toggleField(id, show) {
+  const el = document.getElementById(id);
+  if (el) { el.classList.toggle('hidden', !show); if (show) el.focus(); }
+}
+function toggleInsRow(id, show) {
+  const el = document.getElementById(id);
+  if (el) el.classList.toggle('hidden', !show);
+}
+
+// ═══════════════════════════════════════════════════
+// SCORING ENGINE
+// ═══════════════════════════════════════════════════
+
+function scoreA() {
+  // Income risk 0-20
+  const dep = getRadio('income-dep');
+  const stop = getRadio('income-stop');
+  let pts = 0;
+  if (dep === 'full') pts += 12;
+  else if (dep === 'partial') pts += 7;
+  else if (dep === 'low') pts += 2;
+  if (stop === 'zero') pts = Math.min(20, pts + 8);
+  else if (stop === 'partial') pts = Math.min(20, pts + 4);
+  let comment = '—';
+  if (pts >= 16) comment = 'Thu nhập dừng ngay khi có biến cố — rủi ro rất cao';
+  else if (pts >= 10) comment = 'Thu nhập dễ bị ảnh hưởng khi không thể làm việc';
+  else if (pts >= 4) comment = 'Có một phần thu nhập thụ động — khá tốt';
+  else if (dep !== null) comment = 'Thu nhập đa dạng, ít phụ thuộc sức khoẻ — tốt';
+  return { pts, comment };
+}
+
+function scoreB() {
+  // Savings risk 0-20
+  const expenses = getNum('exp-housing') + getNum('exp-living') + getNum('exp-kids') +
+    getNum('exp-insurance') + getNum('exp-debt') + getNum('exp-other');
+  const savings = getNum('savings');
+  let months = expenses > 0 ? savings / expenses : 0;
+  let pts = 0, comment = '—';
+  if (savings === 0 && expenses === 0) return { pts: 0, comment: '—', months: 0, expenses, savings };
+  if (months < 3) { pts = 20; comment = 'Tiết kiệm dưới 3 tháng — rủi ro rất cao'; }
+  else if (months < 6) { pts = 14; comment = `Đủ ${months.toFixed(1)} tháng — nên tăng lên 6+ tháng`; }
+  else if (months < 12) { pts = 7; comment = `Đủ ${months.toFixed(1)} tháng — khá tốt`; }
+  else { pts = 2; comment = `Đủ ${months.toFixed(1)} tháng — được bảo vệ tốt`; }
+  return { pts, comment, months, expenses, savings };
+}
+
+function scoreC() {
+  // Health risk 0-20
+  const general = getRadio('health-general');
+  const smoke = getRadio('smoke');
+  const chronic = getRadio('chronic');
+  const surgery = getRadio('surgery');
+  const famHist = getRadio('family-history');
+  let pts = 0;
+  if (general === 'sick') pts += 8;
+  else if (general === 'normal') pts += 3;
+  if (smoke === 'yes') pts += 4;
+  else if (smoke === 'quit') pts += 1;
+  if (chronic === 'yes') pts += 4;
+  if (surgery === 'yes') pts += 2;
+  if (famHist === 'yes') pts += 4;
+  pts = Math.min(20, pts);
+  let comment = '—';
+  if (pts >= 14) comment = 'Tình trạng sức khoẻ cần đặc biệt chú ý khi mua bảo hiểm';
+  else if (pts >= 8) comment = 'Một số yếu tố rủi ro — nên khai báo đầy đủ khi ký';
+  else if (pts >= 2) comment = 'Sức khoẻ tương đối tốt, có yếu tố nhỏ cần lưu ý';
+  else if (general !== null) comment = 'Sức khoẻ tốt, thuận lợi để mua bảo hiểm với phí tốt';
+  return { pts, comment };
+}
+
+function scoreD() {
+  // Chỉ tính bảo hiểm của NGƯỜI TRỤ CỘT cho điểm rủi ro
+  const selfLife     = getRadio('self-life')     === 'yes';
+  const selfCritical = getRadio('self-critical') === 'yes';
+  const selfHealth   = getRadio('self-health')   === 'yes';
+  const selfSocial   = getRadio('self-social')   === 'yes';
+  const selfLifeAmt  = getNum('self-life-amount');
+  const selfCritAmt  = getNum('self-critical-amount');
+  const incomeMain   = getNum('income-main');
+  const needed       = incomeMain * 60; // 5 năm thu nhập
+
+  // Bảo hiểm của con / vợ chồng (không tính vào điểm rủi ro trụ cột)
+  const childLife    = getRadio('child-life')    === 'yes';
+  const childLifeAmt = getNum('child-life-amount');
+
+  let pts = 20;
+  // Nhân thọ trụ cột: trọng số cao nhất
+  if (selfLife && selfLifeAmt > 0 && needed > 0) {
+    const ratio = selfLifeAmt / needed;
+    if (ratio >= 1)   pts -= 10;
+    else if (ratio >= 0.5) pts -= 7;
+    else if (ratio >= 0.2) pts -= 4;
+    else pts -= 2;
+  } else if (selfLife) pts -= 3;
+
+  // Hiểm nghèo trụ cột
+  if (selfCritical) pts -= (selfCritAmt >= 300 ? 5 : 3);
+  // Sức khoẻ trụ cột
+  if (selfHealth) pts -= 3;
+  // BHXH
+  if (selfSocial) pts -= 2;
+
+  pts = Math.max(0, Math.min(20, pts));
+
+  // Xây dựng comment dựa trên trường hợp thực tế
+  let comment = '—';
+  const anyIns = selfLife || selfCritical || selfHealth || selfSocial;
+  const selfNotProtected = !selfLife && !selfCritical;
+  const hasChildInsOnly  = !anyIns && childLife;
+
+  if (hasChildInsOnly) {
+    comment = '⚠️ Đang bảo vệ cho con — nhưng người trụ cột chưa có BH. Cần đảo ưu tiên ngay';
+  } else if (!anyIns) {
+    comment = 'Người trụ cột chưa có bảo hiểm nào — gia đình không có lưới bảo vệ';
+  } else if (selfNotProtected && (selfHealth || selfSocial)) {
+    comment = 'Chỉ có BH sức khoẻ — chưa có bảo vệ thu nhập khi bệnh nặng / tử vong';
+  } else if (pts >= 14) {
+    comment = 'Có BH nhưng mức bảo vệ thấp hơn nhiều so với thu nhập thực';
+  } else if (pts >= 8) {
+    comment = 'Đã có BH nhân thọ — cần kiểm tra mức bảo vệ có đủ 5 năm thu nhập chưa';
+  } else {
+    comment = 'Đang được bảo vệ khá đầy đủ — có thể tối ưu thêm';
+  }
+
+  return { pts, comment, needed, selfLifeAmt, selfCritAmt, childLife, childLifeAmt, selfNotProtected };
+}
+
+function scoreE() {
+  // Dependents risk 0-20
+  const dep = getRadio('dependents');
+  let pts = 0, comment = '—';
+  if (dep === '0') { pts = 2; comment = 'Không có người phụ thuộc — mức rủi ro thấp nhất'; }
+  else if (dep === '1') { pts = 8; comment = '1 người phụ thuộc — nếu có chuyện, 1 người bị ảnh hưởng'; }
+  else if (dep === '2') { pts = 14; comment = '2 người phụ thuộc — cần mức bảo vệ đáng kể'; }
+  else if (dep === '3') { pts = 20; comment = '3+ người phụ thuộc — ưu tiên hàng đầu cần bảo vệ'; }
+  return { pts, comment };
+}
+
+// ═══════════════════════════════════════════════════
+// SCORE DISPLAY
+// ═══════════════════════════════════════════════════
+
+const SCORE_LEVELS = [
+  { max: 19,  color: '#16a34a', bg: '#f0fdf4', label: '✅ Đang được bảo vệ tốt',       desc: 'Anh/chị đang có nền tảng tài chính vững. Buổi tư vấn sẽ giúp tối ưu thêm và đảm bảo không có khoảng trống bảo vệ ẩn.' },
+  { max: 39,  color: '#65a30d', bg: '#f7fee7', label: '🟡 Rủi ro thấp — còn 1–2 điểm cần xem lại', desc: 'Nhìn chung tốt, nhưng vẫn có 1–2 điểm có thể cải thiện. Tư vấn viên sẽ chỉ ra điểm nào ưu tiên nhất.' },
+  { max: 59,  color: '#ca8a04', bg: '#fefce8', label: '🟠 Rủi ro trung bình — có lỗ hổng cần xử lý', desc: 'Đang có một số khoảng trống bảo vệ đáng chú ý. Nên có kế hoạch cụ thể trong 3–6 tháng tới.' },
+  { max: 79,  color: '#ea580c', bg: '#fff7ed', label: '🔴 Rủi ro đáng kể — cần có kế hoạch sớm',   desc: 'Gia đình đang có nguy cơ tài chính rõ ràng nếu xảy ra biến cố. Cần hành động trong 1–3 tháng tới.' },
+  { max: 100, color: '#dc2626', bg: '#fef2f2', label: '🚨 Rủi ro rất cao — cần hành động ngay',    desc: 'Không có lưới bảo vệ nào. Nếu xảy ra biến cố bất kỳ lúc nào, gia đình sẽ bị ảnh hưởng nặng nề.' },
+];
+
+function getLevelByScore(score) {
+  return SCORE_LEVELS.find(l => score <= l.max) || SCORE_LEVELS[SCORE_LEVELS.length - 1];
+}
+
+function setBar(id, pts) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const pct = (pts / 20) * 100;
+  el.style.width = pct + '%';
+  el.style.background = pts <= 4 ? '#4ade80' : pts <= 10 ? '#facc15' : pts <= 16 ? '#fb923c' : '#f87171';
+}
+
+function updateGauge(score) {
+  const arc = document.getElementById('gauge-arc');
+  if (!arc) return;
+  const maxDash = 163; // circumference of half-circle (r=52, π=3.14 → 163 for 180°)
+  const filled = (score / 100) * maxDash;
+  arc.setAttribute('stroke-dasharray', `${filled} ${maxDash}`);
+  const level = getLevelByScore(score);
+  arc.setAttribute('stroke', level.color);
+}
+
+function setTableRow(suffix, pts, comment, inputted) {
+  const elPts = document.getElementById(`rt-${suffix}`);
+  const elCmt = document.getElementById(`rc-${suffix}`);
+  if (elPts) {
+    elPts.textContent = inputted ? pts : '—';
+    elPts.className = 'font-bold ' + (inputted ? (pts >= 14 ? 'text-red-500' : pts >= 8 ? 'text-amber-500' : 'text-green-600') : 'text-slate-300');
+  }
+  if (elCmt) { elCmt.textContent = comment; elCmt.className = 'py-3 px-4 text-xs ' + (inputted ? 'text-slate-600' : 'text-slate-400'); }
+}
+
+// ═══════════════════════════════════════════════════
+// MAIN RECALC
+// ═══════════════════════════════════════════════════
+
+function recalc() {
+  // Cập nhật hiện/ẩn section vợ chồng / con trước
+  updateInsuranceSections();
+  // Cập nhật sidebar tư vấn viên
+  const advName = document.getElementById('adv-name')?.value;
+  const advCode = document.getElementById('adv-code')?.value;
+  document.getElementById('sidebar-adv-name').textContent = advName || '—';
+  document.getElementById('sidebar-adv-code').textContent = advCode ? `Mã: ${advCode.toUpperCase()}` : 'Mã: —';
+
+  const a = scoreA();
+  const b = scoreB();
+  const c = scoreC();
+  const d = scoreD();
+  const e = scoreE();
+
+  const inputtedA = !!getRadio('income-dep');
+  const inputtedB = getNum('savings') > 0 || getNum('exp-living') > 0;
+  const inputtedC = !!getRadio('health-general');
+  const inputtedD = !!(getRadio('self-life') || getRadio('self-critical') || getRadio('self-health') || getRadio('self-social'));
+  const inputtedE = !!getRadio('dependents');
+
+  const ptsArr = [
+    inputtedA ? a.pts : 0,
+    inputtedB ? b.pts : 0,
+    inputtedC ? c.pts : 0,
+    inputtedD ? d.pts : 0,
+    inputtedE ? e.pts : 0,
+  ];
+  const anyInputted = inputtedA || inputtedB || inputtedC || inputtedD || inputtedE;
+  const total = ptsArr.reduce((s, v) => s + v, 0);
+
+  // Sidebar bars
+  setBar('bar-a', inputtedA ? a.pts : 0);
+  setBar('bar-b', inputtedB ? b.pts : 0);
+  setBar('bar-c', inputtedC ? c.pts : 0);
+  setBar('bar-d', inputtedD ? d.pts : 0);
+  setBar('bar-e', inputtedE ? e.pts : 0);
+
+  document.getElementById('pts-a').textContent = inputtedA ? a.pts : 0;
+  document.getElementById('pts-b').textContent = inputtedB ? b.pts : 0;
+  document.getElementById('pts-c').textContent = inputtedC ? c.pts : 0;
+  document.getElementById('pts-d').textContent = inputtedD ? d.pts : 0;
+  document.getElementById('pts-e').textContent = inputtedE ? e.pts : 0;
+
+  // Gauge
+  updateGauge(anyInputted ? total : 0);
+  document.getElementById('score-number').textContent = anyInputted ? total : 0;
+
+  // Score label in sidebar
+  const level = getLevelByScore(total);
+  const scoreLabel = document.getElementById('score-label');
+  scoreLabel.textContent = anyInputted ? level.label : 'Chưa có dữ liệu';
+  scoreLabel.style.color = anyInputted ? level.color : '';
+
+  // Result section big score
+  document.getElementById('result-score-big').textContent = anyInputted ? total : 0;
+  document.getElementById('result-score-big').style.color = anyInputted ? level.color : '#94a3b8';
+
+  // Result badge
+  const badgeWrap = document.getElementById('result-badge-wrap');
+  if (anyInputted) {
+    badgeWrap.innerHTML = `<span class="result-badge" style="background:${level.bg};color:${level.color}">${level.label}</span>`;
+  } else {
+    badgeWrap.innerHTML = '';
+  }
+  document.getElementById('result-description').textContent = anyInputted
+    ? level.desc
+    : 'Điền thông tin vào các phần trên để xem kết quả phân tích rủi ro của anh/chị.';
+
+  // Table rows
+  setTableRow('a', a.pts, a.comment, inputtedA);
+  setTableRow('b', b.pts, b.comment, inputtedB);
+  setTableRow('c', c.pts, c.comment, inputtedC);
+  setTableRow('d', d.pts, d.comment, inputtedD);
+  setTableRow('e', e.pts, e.comment, inputtedE);
+
+  // Income total
+  const mainInc = getNum('income-main');
+  const sideInc = getNum('income-side');
+  const totalInc = mainInc + sideInc;
+  document.getElementById('income-total').textContent = totalInc > 0 ? totalInc.toLocaleString('vi-VN') + ' triệu/tháng' : '—';
+
+  // Expense + runway
+  if (inputtedB) {
+    document.getElementById('expense-total').textContent = b.expenses > 0 ? b.expenses.toLocaleString('vi-VN') + ' triệu' : '—';
+    const runwayBox = document.getElementById('runway-box');
+    const runwayVal = document.getElementById('runway-val');
+    if (b.months > 0 && b.expenses > 0) {
+      const color = b.months < 3 ? '#dc2626' : b.months < 6 ? '#ea580c' : b.months < 12 ? '#ca8a04' : '#16a34a';
+      runwayVal.style.color = color;
+      runwayVal.textContent = b.months.toFixed(1) + ' tháng';
+      runwayBox.style.borderColor = color;
+    } else {
+      runwayVal.textContent = '—';
+    }
+  }
+
+  // Gap analysis — chỉ tính cho người trụ cột
+  const gapBox = document.getElementById('gap-box');
+  if (mainInc > 0 && inputtedD) {
+    const needed = mainInc * 60;
+    const have = d.selfLifeAmt + d.selfCritAmt;
+    const diff = needed - have;
+    document.getElementById('gap-need').textContent = needed.toLocaleString('vi-VN') + ' triệu';
+    document.getElementById('gap-have').textContent = have > 0 ? have.toLocaleString('vi-VN') + ' triệu' : 'Chưa có';
+    const diffEl = document.getElementById('gap-diff');
+    diffEl.textContent = diff > 0 ? diff.toLocaleString('vi-VN') + ' triệu' : '✓ Đủ';
+    diffEl.className = diff > 0 ? 'font-bold text-red-500 text-sm' : 'font-bold text-green-600 text-sm';
+    gapBox.classList.remove('hidden');
+    // Cảnh báo nếu có BH cho con nhưng trụ cột chưa được bảo vệ
+    const warnEl = document.getElementById('gap-child-warning');
+    const warnText = document.getElementById('gap-child-warning-text');
+    if (d.childLife && d.selfNotProtected) {
+      warnText.textContent = 'Đang có bảo hiểm cho con (' + (d.childLifeAmt > 0 ? d.childLifeAmt.toLocaleString('vi-VN') + ' triệu' : 'đã có') + ') nhưng người trụ cột chưa có BH nhân thọ. Nên bổ sung bảo vệ cho trụ cột trước.';
+      warnEl.classList.remove('hidden');
+    } else {
+      warnEl.classList.add('hidden');
+    }
+  } else {
+    gapBox.classList.add('hidden');
+  }
+
+  // Priorities
+  const priorities = Array.from(document.querySelectorAll('input[name="priority"]:checked')).map(el => el.value);
+  const prioLabels = {
+    income: 'Thu nhập liên tục', medical: 'Chi phí y tế', family: 'Bảo vệ gia đình',
+    edu: 'Học phí con cái', invest: 'Tài sản/đầu tư', retire: 'Hưu trí đúng thời điểm'
+  };
+  const prioBox = document.getElementById('priority-box');
+  const prioList = document.getElementById('priority-list');
+  if (priorities.length > 0) {
+    prioList.innerHTML = priorities.map(p =>
+      `<span class="bg-white border border-brand text-brand text-xs font-semibold px-3 py-1 rounded-full">${prioLabels[p] || p}</span>`
+    ).join('');
+    prioBox.classList.remove('hidden');
+  } else {
+    prioBox.classList.add('hidden');
+  }
+
+  // Progress
+  updateProgress();
+}
+
+// ═══════════════════════════════════════════════════
+// PROGRESS
+// ═══════════════════════════════════════════════════
+
+function sectionProgress(idx) {
+  // 0-indexed
+  if (idx === 0) return !!(document.getElementById('f-name')?.value && getRadio('family') && getRadio('dependents'));
+  if (idx === 1) return !!(getNum('income-main') > 0 && getRadio('income-dep'));
+  if (idx === 2) return !!(getNum('exp-living') > 0 && getNum('savings') >= 0);
+  if (idx === 3) return !!(getRadio('health-general') && getRadio('smoke'));
+  if (idx === 4) return !!(getRadio('self-life') || getRadio('self-critical') || getRadio('self-social'));
+  if (idx === 5) return !!(document.getElementById('goal-worry')?.value);
+  return false;
+}
+
+function updateProgress() {
+  let done = 0;
+  const nav = document.getElementById('section-nav');
+  if (!nav) return;
+  nav.innerHTML = '';
+  SECTIONS.forEach((s, i) => {
+    const isDone = sectionProgress(i);
+    if (isDone) done++;
+    const isActive = !isDone; // simplified: active if not done
+    nav.innerHTML += `
+      <div class="flex items-center gap-2 py-1 cursor-pointer" onclick="document.getElementById('${s.id}')?.scrollIntoView({behavior:'smooth',block:'start'})">
+        <div class="nav-dot ${isDone ? 'done' : 'pending'}" style="${isDone ? '' : ''}"></div>
+        <span class="text-xs ${isDone ? 'text-brand font-semibold' : 'text-slate-400'}">${s.label}</span>
+        ${isDone ? '<span class="ml-auto text-green-500 text-xs">✓</span>' : ''}
+      </div>`;
+  });
+  const pct = Math.round((done / SECTIONS.length) * 100);
+  document.getElementById('progress-pct').textContent = pct + '%';
+  document.getElementById('progress-bar').style.width = pct + '%';
+}
+
+// ═══════════════════════════════════════════════════
+// INSURANCE SECTIONS: hiện/ẩn theo context gia đình
+// (phải đặt TRƯỚC recalc để hoisting không bị lỗi)
+// ═══════════════════════════════════════════════════
+
+function updateInsuranceSections() {
+  const family = getRadio('family');
+  const deps   = getRadio('dependents');
+  const showSpouse = ['married', 'kids', 'parents', 'couple'].includes(family);
+  const showChild  = family === 'kids' || (deps && deps !== '0');
+  document.getElementById('spouse-ins-section')?.classList.toggle('hidden', !showSpouse);
+  document.getElementById('child-ins-section')?.classList.toggle('hidden', !showChild);
+}
+
+// ═══════════════════════════════════════════════════
+// RESET
+// ═══════════════════════════════════════════════════
+
+function resetForm() {
+  if (!confirm('Xoá hết dữ liệu và làm lại từ đầu?')) return;
+  document.querySelectorAll('input[type=text], input[type=number], textarea').forEach(el => el.value = '');
+  document.querySelectorAll('input[type=radio], input[type=checkbox]').forEach(el => el.checked = false);
+  document.querySelectorAll('#self-life-detail, #self-critical-detail, #self-health-detail, #spouse-life-detail, #child-life-detail, #chronic-detail, #surgery-detail, #family-history-detail').forEach(el => el.classList.add('hidden'));
+  recalc();
+}
+
+// ═══════════════════════════════════════════════════
+// CRM — LƯU HỒ SƠ KHÁCH HÀNG
+// ═══════════════════════════════════════════════════
+
+// ⚙️ Điền URL Google Apps Script Web App vào đây sau khi deploy
+const CRM_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyzV81iJX2Rnb3E9qLuTfGzXwGG59ZXYtvLcTL6Us-dYrw6BwKFh2k4lbPZK5Udxqq8/exec';
+
+function collectData() {
+  const a = scoreA(), b = scoreB(), c = scoreC(), d = scoreD(), e = scoreE();
+  const total = a.pts + b.pts + c.pts + d.pts + e.pts;
+  return {
+    timestamp: new Date().toLocaleString('vi-VN'),
+    // Tư vấn viên
+    advName:  document.getElementById('adv-name')?.value  || '',
+    advEmail: document.getElementById('adv-email')?.value || '',
+    advCode:  document.getElementById('adv-code')?.value  || '',
+    // Thông tin khách hàng
+    ten: document.getElementById('f-name')?.value || '',
+    emailKhach: document.getElementById('f-email')?.value || '',
+    soDienThoai: document.getElementById('f-phone')?.value || '',
+    namSinh: document.getElementById('f-birth')?.value || '',
+    ngheNghiep: document.getElementById('f-job')?.value || '',
+    thanhPho: document.getElementById('f-city')?.value || '',
+    giaoDinh: getRadio('family') || '',
+    nguoiPhuThuoc: getRadio('dependents') || '',
+    // Thu nhập
+    thuNhapChinh: getNum('income-main'),
+    thuNhapPhu: getNum('income-side'),
+    tongThuNhap: getNum('income-main') + getNum('income-side'),
+    // Chi tiêu
+    tongChiPhi: b.expenses,
+    tietKiem: getNum('savings'),
+    soThangTuSong: b.months > 0 ? b.months.toFixed(1) : 0,
+    // Sức khoẻ
+    sucKhoe: getRadio('health-general') || '',
+    hutThuoc: getRadio('smoke') || '',
+    benhManTinh: getRadio('chronic') || '',
+    // BH người trụ cột
+    bhNhanTho_TruCot: getRadio('self-life') || '',
+    bhNhanTho_MucBaoVe: getNum('self-life-amount'),
+    bhNhanTho_CongTy: document.getElementById('self-life-co')?.value || '',
+    bhHiemNgheo_TruCot: getRadio('self-critical') || '',
+    bhSucKhoe_TruCot: getRadio('self-health') || '',
+    bhXH: getRadio('self-social') || '',
+    // BH con
+    bhCon_NhanTho: getRadio('child-life') || '',
+    bhCon_MucBaoVe: getNum('child-life-amount'),
+    bhCon_CongTy: document.getElementById('child-life-co')?.value || '',
+    // Điểm rủi ro
+    diemA: a.pts, diemB: b.pts, diemC: c.pts, diemD: d.pts, diemE: e.pts,
+    tongDiem: total,
+    mucDoRuiRo: getLevelByScore(total).label,
+    // Mục tiêu
+    mucTieu5Nam: document.getElementById('goal-5yr')?.value || '',
+    loNhatDieu: document.getElementById('goal-worry')?.value || '',
+    ghiChu: document.getElementById('notes')?.value || '',
+    // Chi phí BH đang đóng — dùng để tính ngân sách còn lại
+    exp_insurance: getNum('exp-insurance'),
+  };
+}
+
+// ─── HOÀN THÀNH – 1 nút, 3 việc song song ──────────
+async function doComplete() {
+  const data = collectData();
+
+  // Validate
+  if (!data.advEmail || !data.advCode) {
+    alert('⚠️ Vui lòng điền email và mã đại lý tư vấn viên (Phần 0) trước.');
+    document.getElementById('sec-0')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return;
+  }
+  if (!data.ten) {
+    alert('⚠️ Vui lòng điền họ tên khách hàng (Phần 1) trước.');
+    document.getElementById('f-name')?.focus();
+    return;
+  }
+
+  // UI: show steps, disable button
+  const btn = document.getElementById('btn-complete');
+  btn.disabled = true;
+  document.getElementById('btn-complete-icon').textContent = '⏳';
+  document.getElementById('btn-complete-text').textContent = 'Đang xử lý...';
+  document.getElementById('complete-steps').classList.remove('hidden');
+  [1,2,3].forEach(n => {
+    document.getElementById(`step-${n}-icon`).textContent = '⏳';
+    document.getElementById(`step-${n}-status`).textContent = 'Đang gửi...';
+  });
+
+  // Gửi 3 requests song song
+  const results = await Promise.allSettled([
+    sendPayload({ ...data, action: 1 }),
+    sendPayload({ ...data, action: 2 }),
+    sendPayload({ ...data, action: 3 }),
+  ]);
+
+  // Cập nhật trạng thái từng bước
+  const labels = ['✅','✅','✅'];
+  const msgs   = ['Đã gửi!','Đã lưu & gửi!','Đang phân tích AI...'];
+  let allOk = true;
+  results.forEach((r, i) => {
+    const ok = r.status === 'fulfilled';
+    if (!ok) allOk = false;
+    document.getElementById(`step-${i+1}-icon`).textContent   = ok ? '✅' : '❌';
+    document.getElementById(`step-${i+1}-status`).textContent = ok ? msgs[i] : 'Lỗi kết nối';
+  });
+
+  // Final button state
+  document.getElementById('btn-complete-icon').textContent = allOk ? '🎉' : '⚠️';
+  document.getElementById('btn-complete-text').textContent  = allOk
+    ? 'Hoàn thành! Kiểm tra email của bạn'
+    : 'Có lỗi — xem chi tiết bên dưới';
+  btn.className = btn.className.replace('bg-cta hover:bg-ctadark', allOk ? 'bg-green-600' : 'bg-amber-500');
+}
+
+async function sendPayload(payload) {
+  if (!CRM_WEBHOOK_URL) throw new Error('Chưa cấu hình webhook URL');
+  await fetch(CRM_WEBHOOK_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════
+
+document.addEventListener('DOMContentLoaded', () => {
+  updateProgress();
+  updateInsuranceSections();
+});
+</script>
+</body>
+</html>
