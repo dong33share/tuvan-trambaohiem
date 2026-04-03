@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
@@ -293,8 +293,19 @@
           </div>
           <div>
             <label class="block text-sm font-semibold text-slate-700 mb-1.5">Mã đại lý</label>
-            <input class="inp" type="text" id="adv-code" placeholder="MLA-12345" oninput="recalc()" style="text-transform:uppercase">
+            <input class="inp" type="text" id="adv-code" placeholder="DONG33-020426" oninput="recalc()" style="text-transform:uppercase">
           </div>
+        </div>
+        <div class="flex items-center gap-3 mt-2">
+          <button type="button" id="btn-verify-agent" onclick="verifyAgent()"
+            class="px-5 py-2 bg-brand text-white text-sm font-semibold rounded-xl hover:bg-brand-dark transition">
+            Xác thực mã đại lý
+          </button>
+          <span id="verify-status" class="text-sm"></span>
+        </div>
+        <div id="agent-invalid-msg" class="hidden bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-700 flex gap-2 items-start">
+          <span class="shrink-0">❌</span>
+          <span>Mã đại lý hoặc email không hợp lệ. Vui lòng kiểm tra lại hoặc liên hệ quản lý.</span>
         </div>
         <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-700 flex gap-2 items-start">
           <span class="shrink-0">⚠️</span>
@@ -1253,6 +1264,51 @@ function resetForm() {
 // ⚙️ Điền URL Google Apps Script Web App vào đây sau khi deploy
 const CRM_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyzV81iJX2Rnb3E9qLuTfGzXwGG59ZXYtvLcTL6Us-dYrw6BwKFh2k4lbPZK5Udxqq8/exec';
 
+// ── Xác thực mã đại lý ──────────────────────────────────
+let agentVerified = false;
+
+async function verifyAgent() {
+  const code  = document.getElementById('adv-code').value.trim();
+  const email = document.getElementById('adv-email').value.trim();
+  const statusEl = document.getElementById('verify-status');
+  const invalidMsg = document.getElementById('agent-invalid-msg');
+  const btn = document.getElementById('btn-verify-agent');
+
+  if (!code || !email) {
+    statusEl.textContent = '⚠️ Vui lòng điền email và mã đại lý.';
+    statusEl.className = 'text-sm text-amber-600';
+    return;
+  }
+
+  btn.disabled = true;
+  statusEl.textContent = 'Đang kiểm tra...';
+  statusEl.className = 'text-sm text-slate-500';
+  invalidMsg.classList.add('hidden');
+
+  try {
+    const resp = await fetch(CRM_WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 0, advCode: code, advEmail: email })
+    });
+    const result = await resp.json();
+    if (result.agentValidated) {
+      agentVerified = true;
+      statusEl.textContent = '✅ Xác thực thành công!';
+      statusEl.className = 'text-sm text-green-600 font-semibold';
+    } else {
+      agentVerified = false;
+      statusEl.textContent = '';
+      invalidMsg.classList.remove('hidden');
+    }
+  } catch(err) {
+    agentVerified = false;
+    statusEl.textContent = '⚠️ Không kết nối được. Thử lại.';
+    statusEl.className = 'text-sm text-red-500';
+  }
+  btn.disabled = false;
+}
+
 function collectData() {
   const a = scoreA(), b = scoreB(), c = scoreC(), d = scoreD(), e = scoreE();
   const total = a.pts + b.pts + c.pts + d.pts + e.pts;
@@ -1311,7 +1367,12 @@ function collectData() {
 async function doComplete() {
   const data = collectData();
 
-  // Validate
+  // Validate agent trước
+  if (!agentVerified) {
+    alert('⚠️ Vui lòng xác thực mã đại lý trước khi gửi (Phần 0).');
+    document.getElementById('sec-0')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return;
+  }
   if (!data.advEmail || !data.advCode) {
     alert('⚠️ Vui lòng điền email và mã đại lý tư vấn viên (Phần 0) trước.');
     document.getElementById('sec-0')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
